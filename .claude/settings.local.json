@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.lostmary.com)",
+      "WebFetch(domain:www.nuvemargentina.com)",
+      "WebFetch(domain:lostmary.com.uy)",
+      "WebFetch(domain:vapos.uy)",
+      "WebFetch(domain:lostmarydirect.com)",
+      "Bash(powershell -Command \"\nInvoke-WebRequest -Uri 'https://lostmary.com.uy/wp-content/uploads/2026/03/watermelon-ice-Photoroom-2.png' -OutFile 'C:/Users/Usuario/OneDrive/Desktop/vapes/public/images/dura-watermelon-ice.png'\nInvoke-WebRequest -Uri 'https://lostmary.com.uy/wp-content/uploads/2026/03/blue-razz-ice.png' -OutFile 'C:/Users/Usuario/OneDrive/Desktop/vapes/public/images/dura-blue-razz-ice.png'\nInvoke-WebRequest -Uri 'https://lostmary.com.uy/wp-content/uploads/2026/03/Strawberry-Kiwi-Lost-Mary-Mo20000-Pro-600x600-PNG.webp' -OutFile 'C:/Users/Usuario/OneDrive/Desktop/vapes/public/images/dura-strawberry-kiwi.webp'\nWrite-Host 'OK'\n\")",
+      "WebFetch(domain:www.elfbarvape.eu)",
+      "WebFetch(domain:allvapesuy.com)",
+      "Bash(powershell -Command \"\nInvoke-WebRequest -Uri 'https://www.elfbarvape.eu/img/74401/EB-ICEKING-Strawberry-Kiwi-Ice/elf-bar-ice-king-40000-strawberry-watermelon-ice-5-rechargeable.webp' -OutFile 'C:/Users/Usuario/OneDrive/Desktop/vapes/public/images/elf40-strawberry-watermelon.webp'\nWrite-Host 'OK'\n\")",
+      "Bash(powershell -Command \"Invoke-WebRequest -Uri 'https://www.elfbarvape.eu/img/74401/EB-ICEKING-Strawberry-Kiwi-Ice/elf-bar-ice-king-40000-strawberry-watermelon-ice-5-rechargeable.webp' -OutFile 'C:/Users/Usuario/OneDrive/Desktop/vapes/public/images/elf40-strawberry-watermelon.webp'\" 2>&1)",
+      "WebFetch(domain:sarayadistribution.com)",
+      "WebFetch(domain:totovape.com)",
+      "WebFetch(domain:www.pricepointny.com)"
+    ]
+  }
+}

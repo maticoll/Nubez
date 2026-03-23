@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vapes Store</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <!-- Íconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header__inner">
+      <div class="header__logo">
+        <i class="fa-solid fa-wind"></i>
+        <span>VapesStore</span>
+      </div>
+      <!-- Botón carrito -->
+      <button class="header__cart-btn" id="btnAbrirCarrito" aria-label="Ver carrito">
+        <i class="fa-solid fa-bag-shopping"></i>
+        <span class="cart-badge" id="cartBadge">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── HERO ───────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero__content">
+      <h1>Los mejores vapes<br /><span>al mejor precio</span></h1>
+      <p>Seleccioná tu sabor favorito y pedí por WhatsApp al instante.</p>
+      <a href="#catalogo" class="btn btn--primary">Ver catálogo</a>
+    </div>
+  </section>
+
+  <!-- ── PROMOS ────────────────────────────────────────────────────────── -->
+  <section class="promos" id="promos">
+    <div class="container">
+      <h2 class="section-title">Promos</h2>
+      <div class="promos-grid">
+
+        <div class="promo-card" data-pack="duo">
+          <div class="promo-card__emoji">🎯</div>
+          <h3 class="promo-card__nombre">Pack Dúo</h3>
+          <p class="promo-card__desc">Elegí <strong>2 sabores</strong> a tu gusto</p>
+          <p class="promo-card__precio">$2.800</p>
+          <p class="promo-card__ahorro">Ahorrás $200 vs precio individual</p>
+          <button class="btn btn--promo" data-pack="duo">Armar pack</button>
+        </div>
+
+        <div class="promo-card promo-card--destacado" data-pack="pro">
+          <span class="promo-card__badge">MÁS POPULAR</span>
+          <div class="promo-card__emoji">🚀</div>
+          <h3 class="promo-card__nombre">Pack Pro</h3>
+          <p class="promo-card__desc">Elegí <strong>3 sabores</strong> a tu gusto</p>
+          <p class="promo-card__precio">$4.200</p>
+          <p class="promo-card__ahorro">Ahorrás $300 vs precio individual</p>
+          <button class="btn btn--promo" data-pack="pro">Armar pack</button>
+        </div>
+
+        <div class="promo-card" data-pack="premium">
+          <div class="promo-card__emoji">💎</div>
+          <h3 class="promo-card__nombre">Pack Premium</h3>
+          <p class="promo-card__desc">Elegí <strong>5 sabores</strong> a tu gusto</p>
+          <p class="promo-card__precio">$6.500</p>
+          <p class="promo-card__ahorro">Ahorrás $1.000 vs precio individual</p>
+          <button class="btn btn--promo" data-pack="premium">Armar pack</button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MODAL SELECTOR DE SABORES ──────────────────────────────────────── -->
+  <div class="promo-modal" id="promoModal" aria-hidden="true">
+    <div class="promo-modal__box">
+      <div class="promo-modal__header">
+        <h3 id="promoModalTitulo"></h3>
+        <button class="promo-modal__close" id="btnCerrarPromoModal" aria-label="Cerrar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p class="promo-modal__contador">
+        Seleccionados: <strong id="promoSelCount">0</strong> / <strong id="promoSelTotal">0</strong>
+      </p>
+      <div class="promo-modal__lista" id="promoModalLista"></div>
+      <button class="btn btn--whatsapp promo-modal__btn" id="btnAgregarPack" disabled>
+        <i class="fa-solid fa-bag-shopping"></i>
+        Agregar pack al carrito
+      </button>
+    </div>
+  </div>
+
+  <!-- ── CATÁLOGO ───────────────────────────────────────────────────────── -->
+  <section class="catalogo" id="catalogo">
+    <div class="container">
+      <h2 class="section-title">Catálogo</h2>
+      <!-- Los productos se insertan dinámicamente desde app.js -->
+      <div class="productos-grid" id="productosGrid">
+        <!-- Skeleton loader mientras carga -->
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CARRITO (panel lateral) ────────────────────────────────────────── -->
+  <aside class="carrito" id="carrito" aria-hidden="true">
+    <div class="carrito__header">
+      <h3><i class="fa-solid fa-bag-shopping"></i> Tu pedido</h3>
+      <button class="carrito__close" id="btnCerrarCarrito" aria-label="Cerrar carrito">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="carrito__items" id="carritoItems">
+      <p class="carrito__vacio">Todavía no agregaste productos.</p>
+    </div>
+
+    <div class="carrito__footer">
+      <div class="carrito__descuento" id="carritoDescuento" style="display:none"></div>
+      <div class="carrito__total">
+        <span>Total</span>
+        <strong id="carritoTotal">$0</strong>
+      </div>
+      <button class="btn btn--whatsapp" id="btnComprar" disabled>
+        <i class="fa-brands fa-whatsapp"></i>
+        Comprar por WhatsApp
+      </button>
+    </div>
+  </aside>
+
+  <!-- Overlay para cerrar carrito al hacer click afuera -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <p>© 2025 VapesStore · Pedidos por WhatsApp</p>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
