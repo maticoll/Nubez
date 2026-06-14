@@ -55,6 +55,10 @@ app.get("/api/productos", async (req, res) => {
   if (!productos) {
     console.warn("[Server] Sheets falló, usando productos de config.js");
     productos = config.productosFallback;
+  } else {
+    // La tienda muestra solo productos con "Precio Venta" cargado (precio > 0).
+    // /api/movimiento y /api/pedido usan la lista completa (registran stock igual).
+    productos = productos.filter((p) => p.precio > 0);
   }
 
   res.json(productos);
@@ -172,18 +176,17 @@ app.post("/api/movimiento", requireApiKey, async (req, res) => {
 
   const aliasNorm = alias.trim().toLowerCase();
 
-  // 2. Buscar el producto en config por alias
-  const producto = config.productosFallback.find((p) => p.alias === aliasNorm);
+  // 2. Buscar el producto en la HOJA (catálogo sheet-driven). Si la hoja no está
+  //    disponible, cae a config.js como fallback.
+  const productosSheet = await sheets.obtenerProductos();
+  let producto = (productosSheet || []).find((p) => p.alias === aliasNorm);
+  if (!producto) producto = config.productosFallback.find((p) => p.alias === aliasNorm);
   if (!producto) {
     return res.status(404).json({ error: `No existe un producto con alias "${alias}".` });
   }
 
-  // 3. Resolver el "Sabor" EXACTO que esperan los SUMIFS de Inventario (col B).
-  //    Se lee de la hoja para garantizar que el movimiento se contabilice; si no
-  //    estuviera en la hoja, cae al nombre de config como último recurso.
-  const productosSheet = await sheets.obtenerProductos();
-  const enHoja   = (productosSheet || []).find((p) => p.alias === aliasNorm);
-  const saborKey = enHoja && enHoja.sabor ? enHoja.sabor : producto.nombre;
+  // 3. Sabor EXACTO que esperan los SUMIFS de Inventario (col B)
+  const saborKey = producto.sabor || producto.nombre;
 
   // 4. Mapear el tipo de la request a los valores de la fila de Movimientos
   const opts = tipo === "venta"

@@ -51,26 +51,40 @@ async function obtenerProductos() {
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${config.sheets.hojaProductos}!A:F`,
+      range: `${config.sheets.hojaProductos}!A:H`,
     });
 
     const filas = res.data.values || [];
     const productos = [];
 
+    let auto = 0;
     for (const fila of filas) {
-      const alias      = (fila[0] || "").toString().trim().toLowerCase();
-      const sabor      = fila[1] != null ? fila[1].toString() : "";
+      const alias       = (fila[0] || "").toString().trim().toLowerCase();
+      const sabor       = fila[1] != null ? fila[1].toString() : "";
       const stockActual = parseFloat(fila[5]);
 
-      // Saltear filas sin alias o sin stock válido
+      // Saltear cabeceras, separadores, TOTAL y filas sin alias o stock válido
       if (!alias || isNaN(stockActual)) continue;
 
-      // Buscar el producto en config.js por alias
-      const base = config.productosFallback.find(p => p.alias === alias);
-      if (!base) continue;
+      // Catálogo armado DESDE LA HOJA (G=precio, H=imagen URL). config.js queda
+      // como fallback por-campo (matcheado por alias) para los productos que ya
+      // estaban cargados, así no hay que volver a tipear precio/imagen de los 11.
+      const base        = config.productosFallback.find(p => p.alias === alias);
+      // Precio de la tienda = col H "Precio Venta" (col G es "Precio Compra"/costo).
+      const precioVenta = parseInt((fila[7] != null ? fila[7].toString() : "").replace(/[^\d]/g, ""), 10);
+      auto++;
 
-      // sabor = texto EXACTO de la col B; es la clave que usan los SUMIFS de Inventario
-      productos.push({ ...base, stock: stockActual, sabor });
+      productos.push({
+        id:          base ? base.id : 1000 + auto,
+        alias,
+        nombre:      (base && base.nombre) || sabor || alias,
+        descripcion: (base && base.descripcion) || "",
+        precio:      Number.isFinite(precioVenta) ? precioVenta : (base ? base.precio : 0),
+        stock:       stockActual,
+        imagen:      (base && base.imagen) || "",   // sin columna de imagen: config o placeholder
+        stockMinimo: (base && base.stockMinimo) || config.stock.minimoAlerta,
+        sabor,   // clave EXACTA de los SUMIFS de Inventario (col B)
+      });
     }
 
     return productos.length > 0 ? productos : null;
