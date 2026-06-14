@@ -215,9 +215,17 @@ app.post("/api/movimiento", requireApiKey, async (req, res) => {
   });
 });
 
-// ── Iniciar servidor ──────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n✅ Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`   Google Sheet ID: ${process.env.GOOGLE_SHEET_ID || "⚠️  no configurado"}`);
-  console.log(`   Telegram:        ${process.env.TELEGRAM_BOT_TOKEN ? "✅ configurado" : "⚠️  no configurado"}\n`);
-});
+// ── Iniciar servidor / exportar para Vercel ───────────────────────────────────
+// En local (node server.js / nodemon) levantamos el servidor con listen().
+// En Vercel (serverless) NO se hace listen: se exporta el app como handler y
+// @vercel/node lo invoca por request. process.env.VERCEL viene seteado en Vercel.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n✅ Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`   Google Sheet ID: ${process.env.GOOGLE_SHEET_ID || "⚠️  no configurado"}`);
+    console.log(`   Telegram:        ${process.env.TELEGRAM_BOT_TOKEN ? "✅ configurado" : "⚠️  no configurado"}\n`);
+  });
+}
+
+// Handler serverless para Vercel (@vercel/node usa este export por request)
+module.exports = app;
