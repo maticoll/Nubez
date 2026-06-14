@@ -215,48 +215,6 @@ app.post("/api/movimiento", requireApiKey, async (req, res) => {
   });
 });
 
-// ── GET /api/_diag (TEMPORAL, protegido) ──────────────────────────────────────
-// Diagnóstico de entorno en producción (no filtra secretos: solo booleanos,
-// longitudes y el mensaje de error de Sheets). BORRAR cuando se confirme que anda.
-app.get("/api/_diag", requireApiKey, async (req, res) => {
-  const pk = process.env.GOOGLE_PRIVATE_KEY || "";
-  const out = {
-    env: {
-      GOOGLE_SHEET_ID:              !!process.env.GOOGLE_SHEET_ID,
-      GOOGLE_SERVICE_ACCOUNT_EMAIL: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      GOOGLE_PRIVATE_KEY:           !!process.env.GOOGLE_PRIVATE_KEY,
-      TELEGRAM_BOT_TOKEN:           !!process.env.TELEGRAM_BOT_TOKEN,
-      TELEGRAM_CHAT_ID:             !!process.env.TELEGRAM_CHAT_ID,
-      NUBEZ_API_KEY:                !!process.env.NUBEZ_API_KEY,
-    },
-    privateKeyFmt: {
-      length:               pk.length,
-      hasLiteralBackslashN: pk.includes("\\n"),
-      hasRealNewline:       pk.includes("\n"),
-      startsWithQuote:      pk.startsWith('"'),
-      pemOkTrasReplace:     pk.replace(/\\n/g, "\n").startsWith("-----BEGIN PRIVATE KEY-----"),
-    },
-    sheets: null,
-  };
-  try {
-    const { google } = require("googleapis");
-    const auth = new google.auth.JWT(
-      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL, null,
-      sheets.normalizePrivateKey(pk),
-      ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    );
-    const api = google.sheets({ version: "v4", auth });
-    const r = await api.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: `${config.sheets.hojaProductos}!A1:B1`,
-    });
-    out.sheets = { ok: true, sample: r.data.values || [] };
-  } catch (e) {
-    out.sheets = { ok: false, error: e.message };
-  }
-  res.json(out);
-});
-
 // ── Iniciar servidor / exportar para Vercel ───────────────────────────────────
 // En local (node server.js / nodemon) levantamos el servidor con listen().
 // En Vercel (serverless) NO se hace listen: se exporta el app como handler y
