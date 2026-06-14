@@ -13,11 +13,29 @@
 const { google } = require("googleapis");
 const config     = require("../config");
 
+// Normaliza el PEM de la private key. Tolera: \n literales (formato .env),
+// saltos de línea reales, comillas envolventes, y el caso "todo en una línea"
+// (Vercel a veces come los saltos al guardar la env var) reconstruyendo el PEM
+// a partir del base64. Así no hay que pelear con el formato al pegarla.
+function normalizePrivateKey(raw) {
+  let k = (raw || "").trim();
+  if (k.startsWith('"') && k.endsWith('"')) k = k.slice(1, -1); // sacar comillas
+  k = k.replace(/\\n/g, "\n");                                   // \n literal -> salto real
+  if (/-----BEGIN [^-]+-----\r?\n/.test(k)) return k;            // ya tiene saltos: OK
+  // Caso sin saltos: reconstruir el PEM partiendo la base64 en líneas de 64
+  const m = k.match(/-----BEGIN ([A-Z0-9 ]+)-----\s*([\s\S]*?)\s*-----END \1-----/);
+  if (m) {
+    const body = m[2].replace(/\s+/g, "").match(/.{1,64}/g);
+    if (body) return `-----BEGIN ${m[1].trim()}-----\n${body.join("\n")}\n-----END ${m[1].trim()}-----\n`;
+  }
+  return k;
+}
+
 function getAuth() {
   return new google.auth.JWT(
     process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     null,
-    process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY),
     ["https://www.googleapis.com/auth/spreadsheets"]
   );
 }
@@ -151,4 +169,4 @@ async function actualizarStock() {
   return true;
 }
 
-module.exports = { obtenerProductos, registrarMovimiento, actualizarStock };
+module.exports = { obtenerProductos, registrarMovimiento, actualizarStock, normalizePrivateKey };

@@ -242,7 +242,7 @@ app.get("/api/_diag", requireApiKey, async (req, res) => {
     const { google } = require("googleapis");
     const auth = new google.auth.JWT(
       process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL, null,
-      pk.replace(/\\n/g, "\n"),
+      sheets.normalizePrivateKey(pk),
       ["https://www.googleapis.com/auth/spreadsheets.readonly"]
     );
     const api = google.sheets({ version: "v4", auth });
