@@ -163,7 +163,7 @@ app.post("/api/pedido", async (req, res) => {
 // Permite que un cliente externo registre una venta o una compra de stock.
 // Body: { tipo: "venta"|"compra", alias, cantidad, precio, comentario? }
 app.post("/api/movimiento", requireApiKey, async (req, res) => {
-  const { tipo, alias, cantidad, precio, comentario } = req.body || {};
+  const { tipo, alias, cantidad, precio, comentario, comprador } = req.body || {};
 
   // 1. Validación de entrada
   if (tipo !== "venta" && tipo !== "compra") {
@@ -199,6 +199,10 @@ app.post("/api/movimiento", requireApiKey, async (req, res) => {
   const opts = tipo === "venta"
     ? { tipo: "Salida",  comprador: "whatsapp",  tipoVenta: "Venta directa", comentario: comentario || "" }
     : { tipo: "Entrada", comprador: "proveedor", tipoVenta: "Reposición",    comentario: comentario || "" };
+
+  // "comprador" opcional del body: si viene (incluso ""), pisa el default por tipo.
+  // "" escribe la celda G vacía; si no viene, queda el default por tipo.
+  if (typeof comprador === "string") opts.comprador = comprador;
 
   const registrado = await sheets.registrarMovimiento(
     [{ nombre: saborKey, cantidad: cant, precio: prc }],
