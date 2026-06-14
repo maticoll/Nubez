@@ -41,6 +41,7 @@ async function obtenerProductos() {
 
     for (const fila of filas) {
       const alias      = (fila[0] || "").toString().trim().toLowerCase();
+      const sabor      = fila[1] != null ? fila[1].toString() : "";
       const stockActual = parseFloat(fila[5]);
 
       // Saltear filas sin alias o sin stock válido
@@ -50,7 +51,8 @@ async function obtenerProductos() {
       const base = config.productosFallback.find(p => p.alias === alias);
       if (!base) continue;
 
-      productos.push({ ...base, stock: stockActual });
+      // sabor = texto EXACTO de la col B; es la clave que usan los SUMIFS de Inventario
+      productos.push({ ...base, stock: stockActual, sabor });
     }
 
     return productos.length > 0 ? productos : null;
@@ -63,8 +65,16 @@ async function obtenerProductos() {
 // ── Registrar movimiento dentro de la tabla ───────────────────────────────────
 // Inserta filas dentro del rango de la tabla usando insertDimension,
 // para que queden dentro de la tabla y las fórmulas SUMIF sigan funcionando.
-async function registrarMovimiento(items) {
+async function registrarMovimiento(items, opts = {}) {
   try {
+    // Defaults = comportamiento actual de /api/pedido (no cambia si no se pasan opts)
+    const {
+      tipo       = "Salida",
+      comprador  = "web/whatsapp",
+      tipoVenta  = "Venta a cliente",
+      comentario = "",
+    } = opts;
+
     const auth      = getAuth();
     const sheetsApi = google.sheets({ version: "v4", auth });
 
@@ -109,14 +119,14 @@ async function registrarMovimiento(items) {
     // 4. Escribir los datos en las filas recién insertadas
     const filas = items.map((item) => [
       fecha,
-      "Salida",
+      tipo,
       item.nombre,
       item.cantidad,
       item.precio,
       item.precio * item.cantidad,
-      "web/whatsapp",
-      "Venta a cliente",
-      "",
+      comprador,
+      tipoVenta,
+      comentario,
     ]);
 
     await sheetsApi.spreadsheets.values.update({
