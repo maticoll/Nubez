@@ -49,6 +49,7 @@ Nubez/
 | Método | Ruta | Descripción |
 |---|---|---|
 | `GET` | `/api/productos` | Catálogo + stock desde Sheets (solo productos con Precio Venta > 0). Fallback a config.js |
+| `GET` | `/api/promos` | Precios de packs (fuente única: `config.js` → `promos`) |
 | `POST` | `/api/pedido` | Registra pedido en Sheets y envía alertas Telegram (público, lo usa la tienda) |
 | `POST` | `/api/movimiento` | Registra venta/compra de stock. **Protegido**: `Authorization: Bearer ${NUBEZ_API_KEY}` |
 

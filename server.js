@@ -64,6 +64,13 @@ app.get("/api/productos", async (req, res) => {
   res.json(productos);
 });
 
+// ── GET /api/promos ───────────────────────────────────────────────────────────
+// Precios de packs (fuente única: config.js). La tienda los usa para no
+// hardcodearlos en el HTML/JS.
+app.get("/api/promos", (req, res) => {
+  res.json(config.promos);
+});
+
 // ── POST /api/pedido ──────────────────────────────────────────────────────────
 // Expande packs en líneas individuales para Sheets.
 // Ej: Pack Dúo $2800 con [Sour Apple, Blue Razz] → 2 filas de $1400 c/u

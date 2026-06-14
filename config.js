@@ -16,6 +16,15 @@ const config = {
     minimoAlerta: 3,                // Enviar alerta Telegram si stock <= este número
   },
 
+  // ── Promos / packs ─────────────────────────────────────────────────────────
+  // Fuente ÚNICA de los precios de packs. La tienda los lee vía GET /api/promos
+  // (no hardcodear en index.html/app.js). precio = total del pack; units = sabores.
+  promos: {
+    duo:     { units: 2, precio: 2600 },
+    pro:     { units: 3, precio: 3900 },
+    premium: { units: 5, precio: 6000 },
+  },
+
   // ── Google Sheets ─────────────────────────────────────────────────────────
   sheets: {
     hojaProductos:    "Inventario",   // Pestaña de stock (alias en col A, sabor en B, stock actual en F)

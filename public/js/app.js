@@ -9,11 +9,15 @@ const CONFIG = {
   stockMinimoVisible: 2,
 };
 
-const PROMOS = [
-  { id: "pack-duo",     emoji: "🎯", nombre: "Pack Dúo",     cantidad: 2, precio: 2800 },
-  { id: "pack-pro",     emoji: "🚀", nombre: "Pack Pro",     cantidad: 3, precio: 4200 },
-  { id: "pack-premium", emoji: "💎", nombre: "Pack Premium", cantidad: 5, precio: 6500 },
-];
+// Metadatos visuales de los packs. Los PRECIOS y la cantidad (units) viven en
+// config.js y se cargan vía /api/promos para no hardcodearlos ni desincronizarlos.
+const PROMO_META = {
+  duo:     { emoji: "🎯", nombre: "Pack Dúo" },
+  pro:     { emoji: "🚀", nombre: "Pack Pro" },
+  premium: { emoji: "💎", nombre: "Pack Premium" },
+};
+let PROMOS    = [];  // [{ id, emoji, nombre, cantidad, precio }] — se llena desde /api/promos
+let PACK_AUTO = [];  // [{ size, precio, id, emoji, nombre }] — para el descuento automático
 
 // ── Estado del carrito ────────────────────────────────────────────────────────
 let carrito = [];    // [{ id, nombre, precio, cantidad, stock }]
@@ -46,6 +50,74 @@ async function cargarProductos() {
       <p style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem">
         Error cargando productos. Verificá que el servidor esté corriendo.
       </p>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PROMOS / PACKS (precios desde config.js vía /api/promos)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function cargarPromos() {
+  let promos = {};
+  try {
+    const res = await fetch("/api/promos");
+    if (res.ok) promos = await res.json();
+  } catch (err) {
+    console.warn("No se pudieron cargar las promos:", err.message);
+  }
+
+  PROMOS = Object.entries(promos).map(([key, v]) => ({
+    id:       key,
+    emoji:    PROMO_META[key]?.emoji  || "🎁",
+    nombre:   PROMO_META[key]?.nombre || key,
+    cantidad: v.units,
+    precio:   v.precio,
+  }));
+
+  PACK_AUTO = Object.entries(promos)
+    .map(([key, v]) => ({
+      size:   v.units,
+      precio: v.precio,
+      id:     `pack-auto-${key}`,
+      emoji:  PROMO_META[key]?.emoji  || "🎁",
+      nombre: PROMO_META[key]?.nombre || key,
+    }))
+    .sort((a, b) => b.size - a.size);
+
+  renderPromoCards(promos);
+}
+
+// Precio individual de referencia (el más frecuente del catálogo) para el "ahorro"
+function refUnidad() {
+  const precios = catalogoProductos.map((p) => p.precio).filter((n) => n > 0);
+  if (!precios.length) return 0;
+  const freq = {};
+  let best = precios[0], bestCount = 0;
+  for (const p of precios) {
+    freq[p] = (freq[p] || 0) + 1;
+    if (freq[p] > bestCount) { bestCount = freq[p]; best = p; }
+  }
+  return best;
+}
+
+// Pinta precio, sabores y ahorro en las cards de promo del index.html
+function renderPromoCards(promos) {
+  const ref = refUnidad();
+  for (const [key, v] of Object.entries(promos)) {
+    const card = document.querySelector(`.promo-card[data-pack="${key}"]`);
+    if (!card) continue;
+
+    const precioEl = card.querySelector(".promo-card__precio");
+    if (precioEl) precioEl.textContent = `$${v.precio.toLocaleString("es-UY")}`;
+
+    const descEl = card.querySelector(".promo-card__desc");
+    if (descEl) descEl.innerHTML = `Elegí <strong>${v.units} sabores</strong> a tu gusto`;
+
+    const ahorroEl = card.querySelector(".promo-card__ahorro");
+    if (ahorroEl) {
+      const ahorro = ref ? Math.max(0, v.units * ref - v.precio) : 0;
+      ahorroEl.textContent = ahorro > 0 ? `Ahorrás $${ahorro.toLocaleString("es-UY")} vs precio individual` : "";
+    }
   }
 }
 
@@ -185,11 +257,7 @@ function agregarAlCarrito(producto) {
 //  DESCUENTO AUTOMÁTICO POR PACKS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PACK_AUTO = [
-  { size: 5, precio: 6500, id: "pack-auto-premium", emoji: "💎", nombre: "Pack Premium" },
-  { size: 3, precio: 4200, id: "pack-auto-pro",     emoji: "🚀", nombre: "Pack Pro"     },
-  { size: 2, precio: 2800, id: "pack-auto-duo",     emoji: "🎯", nombre: "Pack Dúo"     },
-];
+// PACK_AUTO se arma en cargarPromos() desde config.js (declarado arriba).
 
 function calcularDescuento() {
   // Solo items individuales (no promos ya elegidas)
@@ -461,6 +529,7 @@ let promoContadores = {};  // { productoId: cantidad }
 
 function abrirPromoModal(packId) {
   promoActiva    = PROMOS.find((p) => p.id === packId);
+  if (!promoActiva) return;   // promos aún no cargadas
   promoContadores = {};
 
   promoModalTitulo.textContent = `${promoActiva.emoji} ${promoActiva.nombre} — Elegí ${promoActiva.cantidad} sabores`;
@@ -565,4 +634,7 @@ document.querySelectorAll(".btn--promo").forEach((btn) => {
 //  INIT
 // ─────────────────────────────────────────────────────────────────────────────
 
-cargarProductos();
+(async function init() {
+  await cargarProductos();   // catálogo (necesario para el "ahorro" de las promos)
+  await cargarPromos();      // precios de packs desde config.js (/api/promos)
+})();
