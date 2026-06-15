@@ -195,10 +195,12 @@ app.post("/api/movimiento", requireApiKey, async (req, res) => {
   // 3. Sabor EXACTO que esperan los SUMIFS de Inventario (col B)
   const saborKey = producto.sabor || producto.nombre;
 
-  // 4. Mapear el tipo de la request a los valores de la fila de Movimientos
+  // 4. Mapear el tipo de la request a los valores de la fila de Movimientos.
+  //    El comentario que llega (HERMES manda "pago"/"debe") se escribe TAL CUAL (col I).
+  const coment = typeof comentario === "string" ? comentario : "";
   const opts = tipo === "venta"
-    ? { tipo: "Salida",  comprador: "whatsapp",  tipoVenta: "Venta directa", comentario: comentario || "" }
-    : { tipo: "Entrada", comprador: "proveedor", tipoVenta: "Reposición",    comentario: comentario || "" };
+    ? { tipo: "Salida",  comprador: "whatsapp",  tipoVenta: "Venta directa", comentario: coment }
+    : { tipo: "Entrada", comprador: "proveedor", tipoVenta: "Reposición",    comentario: coment };
 
   // "comprador" opcional del body: si viene (incluso ""), pisa el default por tipo.
   // "" escribe la celda G vacía; si no viene, queda el default por tipo.
@@ -227,6 +229,23 @@ app.post("/api/movimiento", requireApiKey, async (req, res) => {
     stockMinimo,
     stockBajo,
   });
+});
+
+// ── POST /api/marcar-pago (protegido con requireApiKey) ───────────────────────
+// Marca como "pago" las ventas (Salida) de un comprador que estaban en "debe".
+// Body: { comprador }
+app.post("/api/marcar-pago", requireApiKey, async (req, res) => {
+  const { comprador } = req.body || {};
+  if (typeof comprador !== "string" || !comprador.trim()) {
+    return res.status(400).json({ error: 'El campo "comprador" es requerido.' });
+  }
+
+  const actualizados = await sheets.marcarPago(comprador);
+  if (actualizados === null) {
+    return res.status(502).json({ error: "No se pudo actualizar Movimientos en Google Sheets." });
+  }
+
+  res.json({ ok: true, comprador: comprador.trim(), actualizados });
 });
 
 // ── Iniciar servidor / exportar para Vercel ───────────────────────────────────

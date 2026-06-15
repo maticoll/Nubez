@@ -52,6 +52,7 @@ Nubez/
 | `GET` | `/api/promos` | Precios de packs (fuente única: `config.js` → `promos`) |
 | `POST` | `/api/pedido` | Registra pedido en Sheets y envía alertas Telegram (público, lo usa la tienda) |
 | `POST` | `/api/movimiento` | Registra venta/compra de stock. **Protegido**: `Authorization: Bearer ${NUBEZ_API_KEY}` |
+| `POST` | `/api/marcar-pago` | Marca como "pago" las ventas (Salida) en "debe" de un comprador. **Protegido** |
 
 ## Google Sheets – estructura esperada
 - **Hoja `Inventario`** (Tabla_2): A=alias, B=sabor, C=stock inicial, D=entradas, E=salidas, F=stock actual (fórmula), **G=precio compra (costo)**, **H=precio venta (precio de tienda)**, I=inversión total, J=ganancia

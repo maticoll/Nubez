@@ -176,6 +176,57 @@ async function registrarMovimiento(items, opts = {}) {
   }
 }
 
+// ── Marcar deudas como pagas ──────────────────────────────────────────────────
+// Helper puro (testeable sin red): devuelve los números de fila (base-1) de
+// Movimientos que son Salida, del comprador dado (case-insensitive, trim) y con
+// comentario "debe".
+function _filasPagoAMarcar(filas, comprador) {
+  const objetivo = (comprador || "").toString().trim().toLowerCase();
+  const rows = [];
+  if (!objetivo) return rows;
+  for (let i = 0; i < filas.length; i++) {
+    const fila   = filas[i] || [];
+    const tipo   = (fila[1] != null ? fila[1].toString() : "").trim().toLowerCase();
+    const comp   = (fila[6] != null ? fila[6].toString() : "").trim().toLowerCase();
+    const coment = (fila[8] != null ? fila[8].toString() : "").trim().toLowerCase();
+    if (tipo === "salida" && comp === objetivo && coment === "debe") {
+      rows.push(i + 1); // fila de la hoja (base-1)
+    }
+  }
+  return rows;
+}
+
+// Busca las ventas "debe" del comprador y les pone comentario "pago" (col I).
+// Devuelve cuántas filas se actualizaron, o null si hubo error.
+async function marcarPago(comprador) {
+  try {
+    const auth      = getAuth();
+    const sheetsApi = google.sheets({ version: "v4", auth });
+    const hoja      = config.sheets.hojaMovimientos;
+
+    const res   = await sheetsApi.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${hoja}!A:I`,
+    });
+    const rows = _filasPagoAMarcar(res.data.values || [], comprador);
+    if (rows.length === 0) return 0;
+
+    await sheetsApi.spreadsheets.values.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      resource: {
+        valueInputOption: "RAW",
+        data: rows.map((r) => ({ range: `${hoja}!I${r}`, values: [["pago"]] })),
+      },
+    });
+
+    console.log(`[Sheets] ${rows.length} deuda(s) marcadas como pagas para "${comprador}".`);
+    return rows.length;
+  } catch (err) {
+    console.error("[Sheets] Error marcando pago:", err.message);
+    return null;
+  }
+}
+
 // ── Actualizar stock ──────────────────────────────────────────────────────────
 // No es necesario: Tabla_2 calcula el stock via fórmulas basadas en Tabla_1.
 // Esta función se mantiene por compatibilidad con server.js.
@@ -183,4 +234,4 @@ async function actualizarStock() {
   return true;
 }
 
-module.exports = { obtenerProductos, registrarMovimiento, actualizarStock, normalizePrivateKey };
+module.exports = { obtenerProductos, registrarMovimiento, actualizarStock, normalizePrivateKey, marcarPago, _filasPagoAMarcar };
