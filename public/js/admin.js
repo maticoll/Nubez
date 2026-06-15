@@ -127,14 +127,16 @@ async function cargarInventario() {
 $("#filtros").addEventListener("submit", (e) => { e.preventDefault(); cargarMovimientos(); });
 $("#filtros-reset").addEventListener("click", () => setTimeout(cargarMovimientos, 0));
 
-$("#backfill").addEventListener("click", async () => {
+async function correrBackfill() {
   if (!confirm("Generar id a las filas viejas sin id (solo afecta la columna J)?")) return;
   try {
     const r = await api("/api/admin/backfill-ids", { method: "POST" });
     toast(`Backfill: ${r.generados} fila(s) actualizadas.`, "ok");
     cargarMovimientos();
   } catch (err) { toast(err.message, "error"); }
-});
+}
+$("#backfill").addEventListener("click", correrBackfill);
+$("#banner-backfill-btn").addEventListener("click", correrBackfill);
 
 function queryFiltros() {
   const f = $("#filtros");
@@ -156,10 +158,24 @@ async function cargarMovimientos() {
   try {
     const movs = await api("/api/movimientos" + queryFiltros());
     movCache = movs;
+    actualizarBannerBackfill(movs);
     if (!movs.length) { tbody.innerHTML = `<tr><td colspan="10" class="empty">Sin movimientos.</td></tr>`; return; }
     tbody.innerHTML = movs.map(renderFila).join("");
     $$("[data-accion]", tbody).forEach((b) => b.addEventListener("click", onAccion));
   } catch (err) { tbody.innerHTML = `<tr><td colspan="10" class="empty">${esc(err.message)}</td></tr>`; }
+}
+
+// Muestra el cartel cuando hay filas sin id (no se pueden editar/borrar hasta el backfill)
+function actualizarBannerBackfill(movs) {
+  const sinId = (movs || []).filter((m) => !m.id).length;
+  const banner = $("#banner-backfill");
+  if (sinId > 0) {
+    $("#banner-backfill-text").textContent =
+      `Hay ${sinId} movimiento(s) sin ID (cargados antes de esta función). Generá los IDs para poder editarlos, borrarlos o marcarlos como pago.`;
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
 }
 
 function badgeEstado(c) {

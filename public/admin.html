@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>Panel · Nubez</title>
   <link rel="stylesheet" href="/css/style.css" />
-  <link rel="stylesheet" href="/css/admin.css" />
+  <link rel="stylesheet" href="/css/admin.css?v=2" />
 </head>
 <body>
 
@@ -59,6 +59,10 @@
             <button class="btn btn--ghost" id="backfill" title="Genera id a las filas viejas para poder editarlas/borrarlas">⚙ Backfill ids</button>
             <button class="btn btn--ghost" data-refresh="movimientos">↻ Refrescar</button>
           </div>
+        </div>
+        <div id="banner-backfill" class="banner" hidden>
+          <span id="banner-backfill-text"></span>
+          <button class="btn btn--primary btn--xs" id="banner-backfill-btn">Generar IDs ahora</button>
         </div>
         <form id="filtros" class="filtros">
           <label>Desde <input type="date" name="desde" /></label>
@@ -158,6 +162,6 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="/js/admin.js"></script>
+  <script src="/js/admin.js?v=2"></script>
 </body>
 </html>

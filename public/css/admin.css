@@ -85,6 +85,14 @@
 }
 .filtros input:focus, .filtros select:focus { outline: none; border-color: var(--accent); }
 
+/* ── Banner (aviso contextual, ej. backfill de ids) ────────────────────────── */
+.banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  background: rgba(124,58,237,0.12); border: 1px solid var(--accent);
+  border-radius: var(--radius); padding: 0.8rem 1rem; margin-bottom: 1.2rem;
+  font-size: 0.9rem;
+}
+
 /* ── Tablas ────────────────────────────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 .tbl { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 560px; }
