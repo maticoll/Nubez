@@ -108,7 +108,7 @@ async function cargarInventario() {
   const tbody = $("#tbl-inventario tbody");
   tbody.innerHTML = `<tr><td colspan="5" class="empty">Cargando…</td></tr>`;
   try {
-    const productos = await api("/api/productos"); // público, pero reusa el helper
+    const productos = await api("/api/inventario"); // inventario COMPLETO (sin filtrar por precio)
     if (!productos.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty">Sin productos.</td></tr>`; return; }
     tbody.innerHTML = productos.map((p) => {
       const bajo = typeof p.stock === "number" && p.stock <= (p.stockMinimo || 3);
@@ -201,6 +201,13 @@ async function onAccion(e) {
   const btn = e.currentTarget;
   const id = btn.dataset.id;
   const accion = btn.dataset.accion;
+
+  // Las filas históricas (anteriores a la col J) no tienen id: hay que correr el
+  // Backfill una vez para poder editarlas/borrarlas/marcarlas.
+  if (!id) {
+    toast("Esta fila no tiene id. Tocá «⚙ Backfill ids» una vez y reintentá.", "error");
+    return;
+  }
 
   if (accion === "pago") {
     if (!confirm("¿Marcar esta venta como pagada?")) return;
@@ -310,5 +317,23 @@ function esc(s) {
 }
 
 // ── Arranque ───────────────────────────────────────────────────────────────────
-if (getPass()) mostrarApp();
-else mostrarLogin();
+// Gate real: no alcanza con tener algo en localStorage; validamos la clave
+// guardada contra el server antes de mostrar el panel.
+async function init() {
+  const pass = getPass();
+  if (!pass) { mostrarLogin(); return; }
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass }),
+    });
+    if (res.ok) { mostrarApp(); return; }
+    clearPass();
+    const d = await res.json().catch(() => ({}));
+    mostrarLogin(res.status === 500 ? (d.error || "Falta configurar ADMIN_PASSWORD en el servidor.") : null);
+  } catch {
+    mostrarLogin("No se pudo conectar con el servidor.");
+  }
+}
+init();

@@ -55,6 +55,7 @@ Nubez/
 | `POST` | `/api/movimiento` | Registra venta/compra de stock. **Protegido**: `Authorization: Bearer ${NUBEZ_API_KEY}` |
 | `POST` | `/api/marcar-pago` | Marca como "pago" las ventas (Salida) en "debe" de un comprador. **Protegido** (Bearer) |
 | `POST` | `/api/admin/login` | Valida `ADMIN_PASSWORD`. El front guarda la clave y la manda en `X-Admin-Password` |
+| `GET` | `/api/inventario` | Inventario COMPLETO (no filtra por precio > 0, a diferencia de `/api/productos`). **Admin** |
 | `GET` | `/api/movimientos` | Hoja Movimientos tipada. Filtros: `?desde&hasta&tipo&comprador&estado`. **Admin** |
 | `GET` | `/api/metricas` | Agregados (vendido, margen, ranking, deudores, por agotarse). `?desde&hasta`. **Admin** |
 | `PATCH` | `/api/movimientos/:id` | Edita una fila por `id` (col J): `{comprador?,comentario?,cantidad?,precio?}`. **Admin** |

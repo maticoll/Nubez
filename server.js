@@ -379,6 +379,15 @@ function calcularMetricas(movs, productos, q = {}) {
   };
 }
 
+// ── GET /api/inventario (admin) ───────────────────────────────────────────────
+// Inventario COMPLETO desde la hoja (a diferencia de /api/productos, NO filtra
+// por precio > 0): muestra todo el stock que tenemos, incluido lo no publicado.
+app.get("/api/inventario", requireAdmin, async (req, res) => {
+  const productos = await sheets.obtenerProductos();
+  if (productos === null) return res.status(502).json({ error: "No se pudo leer Inventario en Google Sheets." });
+  res.json(productos);
+});
+
 // ── GET /api/movimientos (admin) ──────────────────────────────────────────────
 app.get("/api/movimientos", requireAdmin, async (req, res) => {
   const movs = await sheets.leerMovimientos();
