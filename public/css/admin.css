@@ -2,6 +2,10 @@
    admin.css - Panel de administración (reusa variables de style.css)
 ───────────────────────────────────────────────────────────────────────────── */
 
+/* El atributo `hidden` DEBE ganar: .login/.modal/.banner usan display:flex, que
+   por especificidad pisaba a [hidden] y dejaba el modal/login siempre visibles. */
+[hidden] { display: none !important; }
+
 /* ── Botones extra ─────────────────────────────────────────────────────────── */
 .btn--ghost {
   background: transparent;
