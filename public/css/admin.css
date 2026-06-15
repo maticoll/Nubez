@@ -2,6 +2,19 @@
    admin.css - Panel de administración (reusa variables de style.css)
 ───────────────────────────────────────────────────────────────────────────── */
 
+/* ── Tema claro (solo panel admin) ──────────────────────────────────────────────
+   Este archivo se carga DESPUÉS de style.css y SOLO en admin.html, así que
+   redefinir aquí las variables pone el panel en modo luz sin tocar la tienda. */
+:root {
+  --bg:          #ffffff;
+  --bg-card:     #ffffff;
+  --bg-card-alt: #f3f4f8;
+  --text:        #15151c;
+  --text-muted:  #5b5b70;
+  --border:      #e3e4ee;
+  --shadow:      0 4px 18px rgba(20, 20, 40, 0.08);
+}
+
 /* El atributo `hidden` DEBE ganar: .login/.modal/.banner usan display:flex, que
    por especificidad pisaba a [hidden] y dejaba el modal/login siempre visibles. */
 [hidden] { display: none !important; }
@@ -51,7 +64,7 @@
   position: sticky; top: 0; z-index: 50;
   display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
   padding: 0.9rem 1.5rem;
-  background: rgba(15,15,19,0.95);
+  background: rgba(255,255,255,0.95);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
@@ -110,10 +123,10 @@
 .row-low td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
 
 .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-.badge--debe { background: rgba(239,68,68,0.18); color: #fca5a5; }
-.badge--pago { background: rgba(37,211,102,0.18); color: #86efac; }
-.badge--entrada { background: rgba(124,58,237,0.18); color: #c4b5fd; }
-.badge--salida { background: rgba(56,189,248,0.16); color: #7dd3fc; }
+.badge--debe { background: rgba(239,68,68,0.14); color: #b91c1c; }
+.badge--pago { background: rgba(34,197,94,0.16); color: #15803d; }
+.badge--entrada { background: rgba(34,197,94,0.16); color: #15803d; }
+.badge--salida { background: rgba(239,68,68,0.14); color: #b91c1c; }
 
 /* ── Métricas ──────────────────────────────────────────────────────────────── */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
@@ -153,8 +166,8 @@
   border: 1px solid var(--border); border-radius: var(--radius);
   padding: 0.75rem 1.2rem; box-shadow: var(--shadow); z-index: 300; font-size: 0.9rem;
 }
-.toast--error { border-color: var(--danger); color: #fca5a5; }
-.toast--ok { border-color: var(--whatsapp); color: #86efac; }
+.toast--error { border-color: var(--danger); color: #b91c1c; }
+.toast--ok { border-color: var(--whatsapp); color: #15803d; }
 
 @media (max-width: 640px) {
   .admin__tabs { width: 100%; margin-left: 0; }
