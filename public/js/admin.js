@@ -6,6 +6,14 @@
 
 const PASS_KEY = "nubez_admin_pass";
 
+// Al cambiar la versión del panel forzamos re-login: evita quedar "adentro" con
+// una clave vieja y confirma que se cargó la versión nueva (no la cacheada).
+const PANEL_VERSION = "3";
+if (localStorage.getItem("nubez_panel_v") !== PANEL_VERSION) {
+  localStorage.removeItem(PASS_KEY);
+  localStorage.setItem("nubez_panel_v", PANEL_VERSION);
+}
+
 const $  = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 

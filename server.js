@@ -20,7 +20,15 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public"))); // Servir frontend
+// Servir frontend. El panel (admin.html) NO se cachea: así un deploy nuevo no
+// queda pisado por una versión vieja en el navegador (que rompía login/banner).
+app.use(express.static(path.join(__dirname, "public"), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith("admin.html")) {
+      res.setHeader("Cache-Control", "no-store, must-revalidate");
+    }
+  },
+}));
 
 // ── Autenticación por API key (Bearer) ────────────────────────────────────────
 // Protege endpoints de escritura usados por clientes externos.
@@ -441,6 +449,7 @@ app.post("/api/admin/backfill-ids", requireAdmin, async (req, res) => {
 // Sirve el panel. (En Vercel, /admin se reescribe a /admin.html vía vercel.json;
 // este handler cubre el entorno local.)
 app.get("/admin", (req, res) => {
+  res.setHeader("Cache-Control", "no-store, must-revalidate");
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
