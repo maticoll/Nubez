@@ -58,13 +58,19 @@ function requireApiKey(req, res, next) {
 // ── Autenticación del panel admin (clave simple) ──────────────────────────────
 // El panel /admin manda la clave en el header X-Admin-Password en cada request.
 // POST /api/admin/login solo valida la clave (el front la guarda en localStorage).
+// Clave esperada, tolerante a espacios/saltos al pegar la env var (típico en
+// Vercel). NO saca comillas: si pegaste el valor entre comillas, hay que quitarlas.
+function adminPasswordEsperada() {
+  return (process.env.ADMIN_PASSWORD || "").trim();
+}
+
 function requireAdmin(req, res, next) {
-  const expected = process.env.ADMIN_PASSWORD;
+  const expected = adminPasswordEsperada();
   if (!expected) {
     console.error("[Auth] ADMIN_PASSWORD no está configurada en el entorno.");
     return res.status(500).json({ error: "Clave de admin no configurada en el servidor." });
   }
-  const provided = req.get("x-admin-password") || "";
+  const provided = (req.get("x-admin-password") || "").trim();
   if (!provided || !safeEqual(provided, expected)) {
     return res.status(401).json({ error: "No autorizado." });
   }
@@ -73,13 +79,13 @@ function requireAdmin(req, res, next) {
 
 // ── POST /api/admin/login ─────────────────────────────────────────────────────
 app.post("/api/admin/login", (req, res) => {
-  const expected = process.env.ADMIN_PASSWORD;
+  const expected = adminPasswordEsperada();
   if (!expected) {
     console.error("[Auth] ADMIN_PASSWORD no está configurada en el entorno.");
     return res.status(500).json({ error: "Clave de admin no configurada en el servidor." });
   }
   const { password } = req.body || {};
-  if (typeof password !== "string" || !safeEqual(password, expected)) {
+  if (typeof password !== "string" || !safeEqual(password.trim(), expected)) {
     return res.status(401).json({ error: "Clave incorrecta." });
   }
   res.json({ ok: true });
