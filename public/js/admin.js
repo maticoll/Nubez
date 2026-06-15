@@ -168,7 +168,9 @@ async function cargarMovimientos() {
     movCache = movs;
     actualizarBannerBackfill(movs);
     if (!movs.length) { tbody.innerHTML = `<tr><td colspan="10" class="empty">Sin movimientos.</td></tr>`; return; }
-    tbody.innerHTML = movs.map(renderFila).join("");
+    // Las filas se agregan al final de la hoja (cronológico viejo→nuevo). Mostramos
+    // del último al primero: invertimos una copia (movCache queda en orden original).
+    tbody.innerHTML = movs.slice().reverse().map(renderFila).join("");
     $$("[data-accion]", tbody).forEach((b) => b.addEventListener("click", onAccion));
   } catch (err) { tbody.innerHTML = `<tr><td colspan="10" class="empty">${esc(err.message)}</td></tr>`; }
 }
