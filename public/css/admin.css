@@ -62,45 +62,73 @@
 /* ── Header admin ──────────────────────────────────────────────────────────── */
 .admin__header {
   position: sticky; top: 0; z-index: 50;
-  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-  padding: 0.9rem 1.5rem;
+  display: flex; align-items: center; gap: 0.6rem 1rem; flex-wrap: wrap;
+  padding: 0.7rem 1rem;
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
-.admin__brand { font-weight: 700; font-size: 1.1rem; }
-.admin__tabs { display: flex; gap: 0.4rem; margin-left: auto; flex-wrap: wrap; }
+.admin__brand { font-weight: 700; font-size: 1.05rem; }
+#logout { margin-left: auto; }
+/* Mobile: las tabs van en una fila propia, desplazable en horizontal si no entran */
+.admin__tabs {
+  order: 3; width: 100%;
+  display: flex; gap: 0.4rem;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.admin__tabs::-webkit-scrollbar { display: none; }
 .tab {
   background: transparent; color: var(--text-muted);
   border: 1px solid transparent; border-radius: var(--radius);
-  padding: 0.5rem 1rem; cursor: pointer; font-size: 0.95rem; font-weight: 600;
-  transition: var(--transition);
+  padding: 0.55rem 1rem; cursor: pointer; font-size: 0.95rem; font-weight: 600;
+  transition: var(--transition); white-space: nowrap; flex: 1 0 auto;
 }
 .tab:hover { color: var(--text); }
 .tab.is-active { color: #fff; background: var(--accent); }
 
-.admin__main { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+.admin__main { max-width: 1200px; margin: 0 auto; padding: 1rem; }
 
 /* ── Vistas / tabs ─────────────────────────────────────────────────────────── */
 .view { display: none; }
 .view.is-active { display: block; }
-.view__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-.view__head h2 { font-size: 1.4rem; }
+.view__head {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1rem;
+}
+.view__head h2 { font-size: 1.25rem; }
+
+@media (min-width: 760px) {
+  .admin__header { padding: 0.9rem 1.5rem; }
+  .admin__tabs { order: 0; width: auto; margin-left: auto; overflow: visible; flex-wrap: wrap; }
+  .tab { flex: 0 0 auto; }
+  #logout { margin-left: 0; }
+  .admin__main { padding: 1.5rem; }
+  .admin__brand { font-size: 1.1rem; }
+  .view__head h2 { font-size: 1.4rem; }
+}
 
 /* ── Filtros ───────────────────────────────────────────────────────────────── */
 .filtros {
-  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end;
+  display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem;
   margin-bottom: 1.2rem;
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 1rem;
 }
 .filtros label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; color: var(--text-muted); }
 .filtros input, .filtros select {
+  width: 100%;
   background: var(--bg); color: var(--text);
   border: 1px solid var(--border); border-radius: 8px;
-  padding: 0.5rem 0.6rem; font-size: 0.9rem;
+  padding: 0.6rem 0.7rem; font-size: 1rem;
 }
 .filtros input:focus, .filtros select:focus { outline: none; border-color: var(--accent); }
+.filtros .btn { width: 100%; justify-content: center; }
+
+@media (min-width: 760px) {
+  .filtros { flex-direction: row; flex-wrap: wrap; align-items: end; }
+  .filtros input, .filtros select { width: auto; font-size: 0.9rem; padding: 0.5rem 0.6rem; }
+  .filtros .btn { width: auto; }
+}
 
 /* ── Banner (aviso contextual, ej. backfill de ids) ────────────────────────── */
 .banner {
@@ -110,17 +138,58 @@
   font-size: 0.9rem;
 }
 
-/* ── Tablas ────────────────────────────────────────────────────────────────── */
-.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-.tbl { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 560px; }
-.tbl th, .tbl td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
-.tbl th { background: var(--bg-card-alt); color: var(--text-muted); font-weight: 600; position: sticky; top: 0; }
-.tbl tbody tr:hover { background: var(--bg-card); }
+/* ── Tablas (mobile-first) ───────────────────────────────────────────────────
+   En celular cada fila se muestra como una TARJETA apilada (thead oculto, cada
+   celda con su etiqueta vía data-label). En ≥760px vuelven a ser tabla real. */
+.table-wrap { border: 0; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.tbl thead { display: none; }
+.tbl tbody tr {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.9rem;
+  margin-bottom: 0.7rem;
+}
+.tbl tbody tr.row-low { background: rgba(239,68,68,0.10); border-color: var(--danger); }
+.tbl td {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+  text-align: right; white-space: normal; word-break: break-word;
+}
+.tbl td:last-child { border-bottom: 0; }
+.tbl td::before {
+  content: attr(data-label);
+  font-weight: 600; color: var(--text-muted); text-align: left; flex: 0 0 auto;
+}
+.tbl td.actions { gap: 0.5rem; padding-top: 0.6rem; }
+.tbl td.actions::before { display: none; }
+.tbl td.actions .btn { flex: 1; justify-content: center; }
+.tbl td.empty { justify-content: center; text-align: center; color: var(--text-muted); }
+.tbl td.empty::before { display: none; }
 .tbl .num { text-align: right; }
-.tbl td.actions { display: flex; gap: 0.35rem; }
 
-.row-low { background: rgba(239,68,68,0.12); }
-.row-low td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+@media (min-width: 760px) {
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+  .tbl { font-size: 0.9rem; min-width: 560px; }
+  .tbl thead { display: table-header-group; }
+  .tbl tbody tr {
+    display: table-row; background: none; border: 0; border-radius: 0; padding: 0; margin: 0;
+  }
+  .tbl tbody tr:hover { background: var(--bg-card); }
+  .tbl tbody tr.row-low { background: rgba(239,68,68,0.12); border: 0; }
+  .tbl tbody tr.row-low td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+  .tbl th, .tbl td {
+    display: table-cell; padding: 0.6rem 0.8rem; text-align: left;
+    border-bottom: 1px solid var(--border); white-space: nowrap; word-break: normal;
+  }
+  .tbl th { background: var(--bg-card-alt); color: var(--text-muted); font-weight: 600; position: sticky; top: 0; }
+  .tbl th.num, .tbl .num { text-align: right; }
+  .tbl td::before { display: none; }
+  .tbl td.actions { display: flex; align-items: center; gap: 0.35rem; }
+  .tbl td.actions .btn { flex: 0 0 auto; }
+}
 
 .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
 .badge--debe { background: rgba(239,68,68,0.14); color: #b91c1c; }
@@ -154,7 +223,7 @@
 .modal__card label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--text-muted); }
 .modal__card input {
   background: var(--bg); color: var(--text);
-  border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.7rem; font-size: 0.95rem;
+  border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.7rem; font-size: 1rem;
 }
 .modal__card input:focus { outline: none; border-color: var(--accent); }
 .modal__actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem; }
@@ -169,7 +238,3 @@
 .toast--error { border-color: var(--danger); color: #b91c1c; }
 .toast--ok { border-color: var(--whatsapp); color: #15803d; }
 
-@media (max-width: 640px) {
-  .admin__tabs { width: 100%; margin-left: 0; }
-  .view__head h2 { font-size: 1.2rem; }
-}

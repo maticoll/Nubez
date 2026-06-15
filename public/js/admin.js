@@ -121,11 +121,11 @@ async function cargarInventario() {
     tbody.innerHTML = productos.map((p) => {
       const bajo = typeof p.stock === "number" && p.stock <= (p.stockMinimo || 3);
       return `<tr class="${bajo ? "row-low" : ""}">
-        <td>${esc(p.nombre)}</td>
-        <td>${esc(p.sabor || "")}</td>
-        <td class="num">${fmt(p.precio)}</td>
-        <td class="num">${p.stock}</td>
-        <td class="num">${p.stockMinimo || 3}</td>
+        <td data-label="Producto">${esc(p.nombre)}</td>
+        <td data-label="Sabor">${esc(p.sabor || "")}</td>
+        <td class="num" data-label="Precio">${fmt(p.precio)}</td>
+        <td class="num" data-label="Stock">${p.stock}</td>
+        <td class="num" data-label="Mínimo">${p.stockMinimo || 3}</td>
       </tr>`;
     }).join("");
   } catch (err) { tbody.innerHTML = `<tr><td colspan="5" class="empty">${esc(err.message)}</td></tr>`; }
@@ -206,15 +206,15 @@ function renderFila(m) {
   const pagoBtn = esDebe
     ? `<button class="btn btn--xs btn--primary" data-accion="pago" ${dataAttr}>Pago</button>` : "";
   return `<tr>
-    <td>${esc(m.fecha)}</td>
-    <td>${badgeTipo(m.tipo)}</td>
-    <td>${esc(m.sabor)}</td>
-    <td class="num">${m.cantidad}</td>
-    <td class="num">${fmt(m.precio)}</td>
-    <td class="num">${fmt(m.total)}</td>
-    <td>${esc(m.comprador)}</td>
-    <td>${esc(m.tipoVenta)}</td>
-    <td>${badgeEstado(m.comentario)}</td>
+    <td data-label="Fecha">${esc(m.fecha)}</td>
+    <td data-label="Tipo">${badgeTipo(m.tipo)}</td>
+    <td data-label="Sabor">${esc(m.sabor)}</td>
+    <td class="num" data-label="Cant">${m.cantidad}</td>
+    <td class="num" data-label="Precio">${fmt(m.precio)}</td>
+    <td class="num" data-label="Total">${fmt(m.total)}</td>
+    <td data-label="Comprador">${esc(m.comprador)}</td>
+    <td data-label="Venta">${esc(m.tipoVenta)}</td>
+    <td data-label="Estado">${badgeEstado(m.comentario)}</td>
     <td class="actions">
       ${pagoBtn}
       <button class="btn btn--xs btn--ghost" data-accion="editar" ${dataAttr}>Editar</button>
@@ -314,7 +314,7 @@ async function cargarMetricas() {
     ].join("");
 
     $("#tbl-ranking tbody").innerHTML = m.ranking.length
-      ? m.ranking.map((r) => `<tr><td>${esc(r.sabor)}</td><td class="num">${r.unidades}</td><td class="num">${fmt(r.ingreso)}</td><td class="num">${fmt(r.margen)}</td></tr>`).join("")
+      ? m.ranking.map((r) => `<tr><td data-label="Sabor">${esc(r.sabor)}</td><td class="num" data-label="Unid.">${r.unidades}</td><td class="num" data-label="Ingreso">${fmt(r.ingreso)}</td><td class="num" data-label="Margen">${fmt(r.margen)}</td></tr>`).join("")
       : `<tr><td colspan="4" class="empty">Sin ventas en el período.</td></tr>`;
 
     $("#list-deudores").innerHTML = m.deudores.length
