@@ -41,6 +41,7 @@ Nubez/
 | `TELEGRAM_BOT_TOKEN` | Token del bot de Telegram |
 | `TELEGRAM_CHAT_ID` | Chat ID del destinatario de alertas |
 | `NUBEZ_API_KEY` | API key para clientes externos (auth de `POST /api/movimiento`) |
+| `ADMIN_PASSWORD` | Clave del panel `/admin` (auth de los endpoints admin, header `X-Admin-Password`) |
 | `PORT` | Puerto del servidor (default: 3000) |
 
 > En producción (Vercel) las env vars se cargan en **Settings → Environment Variables**, no desde `.env`.
@@ -52,11 +53,24 @@ Nubez/
 | `GET` | `/api/promos` | Precios de packs (fuente única: `config.js` → `promos`) |
 | `POST` | `/api/pedido` | Registra pedido en Sheets y envía alertas Telegram (público, lo usa la tienda) |
 | `POST` | `/api/movimiento` | Registra venta/compra de stock. **Protegido**: `Authorization: Bearer ${NUBEZ_API_KEY}` |
-| `POST` | `/api/marcar-pago` | Marca como "pago" las ventas (Salida) en "debe" de un comprador. **Protegido** |
+| `POST` | `/api/marcar-pago` | Marca como "pago" las ventas (Salida) en "debe" de un comprador. **Protegido** (Bearer) |
+| `POST` | `/api/admin/login` | Valida `ADMIN_PASSWORD`. El front guarda la clave y la manda en `X-Admin-Password` |
+| `GET` | `/api/movimientos` | Hoja Movimientos tipada. Filtros: `?desde&hasta&tipo&comprador&estado`. **Admin** |
+| `GET` | `/api/metricas` | Agregados (vendido, margen, ranking, deudores, por agotarse). `?desde&hasta`. **Admin** |
+| `PATCH` | `/api/movimientos/:id` | Edita una fila por `id` (col J): `{comprador?,comentario?,cantidad?,precio?}`. **Admin** |
+| `DELETE` | `/api/movimientos/:id` | Borra una fila por `id` (deleteDimension). **Admin** |
+| `POST` | `/api/admin/backfill-ids` | One-shot: genera `id` en col J a filas históricas sin id. **Admin** |
+
+> Endpoints **Admin** = exigen header `X-Admin-Password: ${ADMIN_PASSWORD}`. El panel se sirve en `/admin` (`public/admin.html` + `js/admin.js` + `css/admin.css`); en Vercel `/admin`→`/admin.html` vía `vercel.json`.
+
+## Panel /admin
+- Tabs: **Inventario** (stock, resalta bajo), **Movimientos** (tabla + filtros + acciones marcar-pago/editar/borrar por fila) y **Métricas** (tarjetas + ranking + deudores + por agotarse).
+- Las acciones por fila dependen de la **col J `id`**. Filas viejas (pre-id) tienen id vacío → correr **Backfill ids** una vez para poder editarlas/borrarlas.
+- Métricas: período (`desde/hasta`) aplica a ventas/ranking/sin-rotación; **deudores** y **por agotarse** son all-time. Costo unitario por sabor = promedio del precio de las Entradas.
 
 ## Google Sheets – estructura esperada
 - **Hoja `Inventario`** (Tabla_2): A=alias, B=sabor, C=stock inicial, D=entradas, E=salidas, F=stock actual (fórmula), **G=precio compra (costo)**, **H=precio venta (precio de tienda)**, I=inversión total, J=ganancia
-- **Hoja `Movimientos`** (Tabla_1): A=fecha, B=tipo (`Entrada`/`Salida`, singular y exacto), C=sabor, D=cantidad, E=precio unitario, F=total, G=comprador, H=tipo venta, I=comentario
+- **Hoja `Movimientos`** (Tabla_1): A=fecha, B=tipo (`Entrada`/`Salida`, singular y exacto), C=sabor, D=cantidad, E=precio unitario, F=total, G=comprador, H=tipo venta, I=comentario, **J=id (único, generado al insertar)**
 - El stock (col F) se calcula con `SUMIFS` de **dos** criterios: tipo (B) **y** sabor (C de Movimientos debe coincidir EXACTO con el Sabor B de Inventario). El backend **no** escribe stock directo.
 - **Catálogo sheet-driven:** `obtenerProductos()` arma los productos leyendo la hoja (alias, nombre=Sabor, **precio=col H**, stock=col F). Agregar un producto a la tienda = agregar fila en Inventario + cargar su **Precio Venta (col H)**. `config.js` es fallback por-campo (nombre/precio/imagen de los originales).
 

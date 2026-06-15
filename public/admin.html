@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Panel · Nubez</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+
+  <!-- ── Gate de login ──────────────────────────────────────────────────────── -->
+  <div id="login" class="login" hidden>
+    <form id="login-form" class="login__card">
+      <h1 class="login__title">Panel Nubez</h1>
+      <p class="login__sub">Ingresá la clave de administrador</p>
+      <input id="login-pass" class="login__input" type="password" placeholder="Clave" autocomplete="current-password" required />
+      <button class="btn btn--primary login__btn" type="submit">Entrar</button>
+      <p id="login-error" class="login__error" hidden></p>
+    </form>
+  </div>
+
+  <!-- ── App ────────────────────────────────────────────────────────────────── -->
+  <div id="app" class="admin" hidden>
+    <header class="admin__header">
+      <div class="admin__brand">☁️ Nubez · Admin</div>
+      <nav class="admin__tabs">
+        <button class="tab is-active" data-tab="inventario">Inventario</button>
+        <button class="tab" data-tab="movimientos">Movimientos</button>
+        <button class="tab" data-tab="metricas">Métricas</button>
+      </nav>
+      <button id="logout" class="btn btn--ghost">Salir</button>
+    </header>
+
+    <main class="admin__main">
+
+      <!-- ── Inventario ──────────────────────────────────────────────────────── -->
+      <section id="view-inventario" class="view is-active">
+        <div class="view__head">
+          <h2>Inventario</h2>
+          <button class="btn btn--ghost" data-refresh="inventario">↻ Refrescar</button>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl" id="tbl-inventario">
+            <thead>
+              <tr><th>Producto</th><th>Sabor</th><th class="num">Precio</th><th class="num">Stock</th><th class="num">Mínimo</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Movimientos ─────────────────────────────────────────────────────── -->
+      <section id="view-movimientos" class="view">
+        <div class="view__head">
+          <h2>Movimientos</h2>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn--ghost" id="backfill" title="Genera id a las filas viejas para poder editarlas/borrarlas">⚙ Backfill ids</button>
+            <button class="btn btn--ghost" data-refresh="movimientos">↻ Refrescar</button>
+          </div>
+        </div>
+        <form id="filtros" class="filtros">
+          <label>Desde <input type="date" name="desde" /></label>
+          <label>Hasta <input type="date" name="hasta" /></label>
+          <label>Tipo
+            <select name="tipo">
+              <option value="">Todos</option>
+              <option value="Salida">Salida</option>
+              <option value="Entrada">Entrada</option>
+            </select>
+          </label>
+          <label>Comprador <input type="text" name="comprador" placeholder="nombre" /></label>
+          <label>Estado
+            <select name="estado">
+              <option value="">Todos</option>
+              <option value="debe">debe</option>
+              <option value="pago">pago</option>
+            </select>
+          </label>
+          <button class="btn btn--primary" type="submit">Filtrar</button>
+          <button class="btn btn--ghost" type="reset" id="filtros-reset">Limpiar</button>
+        </form>
+        <div class="table-wrap">
+          <table class="tbl" id="tbl-movimientos">
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Tipo</th><th>Sabor</th><th class="num">Cant</th>
+                <th class="num">Precio</th><th class="num">Total</th><th>Comprador</th>
+                <th>Venta</th><th>Estado</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Métricas ────────────────────────────────────────────────────────── -->
+      <section id="view-metricas" class="view">
+        <div class="view__head">
+          <h2>Métricas</h2>
+          <button class="btn btn--ghost" data-refresh="metricas">↻ Refrescar</button>
+        </div>
+        <form id="filtros-met" class="filtros">
+          <label>Desde <input type="date" name="desde" /></label>
+          <label>Hasta <input type="date" name="hasta" /></label>
+          <button class="btn btn--primary" type="submit">Aplicar</button>
+          <button class="btn btn--ghost" type="reset" id="filtros-met-reset">Limpiar</button>
+        </form>
+
+        <div class="cards" id="met-cards"></div>
+
+        <div class="met-grid">
+          <div class="panel">
+            <h3>Ranking de ventas</h3>
+            <div class="table-wrap">
+              <table class="tbl" id="tbl-ranking">
+                <thead><tr><th>Sabor</th><th class="num">Unid.</th><th class="num">Ingreso</th><th class="num">Margen</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Deudores</h3>
+            <ul class="list" id="list-deudores"></ul>
+          </div>
+          <div class="panel">
+            <h3>Por agotarse</h3>
+            <ul class="list" id="list-agotarse"></ul>
+          </div>
+          <div class="panel">
+            <h3>Sin rotación (en el período)</h3>
+            <ul class="list" id="list-sinrotacion"></ul>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ── Modal de edición ─────────────────────────────────────────────────────── -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal__card">
+      <h3>Editar movimiento</h3>
+      <form id="edit-form">
+        <input type="hidden" name="id" />
+        <label>Comprador <input type="text" name="comprador" /></label>
+        <label>Cantidad <input type="number" name="cantidad" min="1" step="1" /></label>
+        <label>Precio <input type="number" name="precio" min="0" step="1" /></label>
+        <label>Estado / comentario <input type="text" name="comentario" placeholder="debe / pago / ..." /></label>
+        <div class="modal__actions">
+          <button class="btn btn--ghost" type="button" id="edit-cancel">Cancelar</button>
+          <button class="btn btn--primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

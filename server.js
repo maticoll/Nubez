@@ -47,6 +47,36 @@ function requireApiKey(req, res, next) {
   next();
 }
 
+// ── Autenticación del panel admin (clave simple) ──────────────────────────────
+// El panel /admin manda la clave en el header X-Admin-Password en cada request.
+// POST /api/admin/login solo valida la clave (el front la guarda en localStorage).
+function requireAdmin(req, res, next) {
+  const expected = process.env.ADMIN_PASSWORD;
+  if (!expected) {
+    console.error("[Auth] ADMIN_PASSWORD no está configurada en el entorno.");
+    return res.status(500).json({ error: "Clave de admin no configurada en el servidor." });
+  }
+  const provided = req.get("x-admin-password") || "";
+  if (!provided || !safeEqual(provided, expected)) {
+    return res.status(401).json({ error: "No autorizado." });
+  }
+  next();
+}
+
+// ── POST /api/admin/login ─────────────────────────────────────────────────────
+app.post("/api/admin/login", (req, res) => {
+  const expected = process.env.ADMIN_PASSWORD;
+  if (!expected) {
+    console.error("[Auth] ADMIN_PASSWORD no está configurada en el entorno.");
+    return res.status(500).json({ error: "Clave de admin no configurada en el servidor." });
+  }
+  const { password } = req.body || {};
+  if (typeof password !== "string" || !safeEqual(password, expected)) {
+    return res.status(401).json({ error: "Clave incorrecta." });
+  }
+  res.json({ ok: true });
+});
+
 // ── GET /api/productos ────────────────────────────────────────────────────────
 // Intenta leer desde Google Sheets; si falla, usa el fallback de config.js
 app.get("/api/productos", async (req, res) => {
@@ -248,6 +278,163 @@ app.post("/api/marcar-pago", requireApiKey, async (req, res) => {
   res.json({ ok: true, comprador: comprador.trim(), actualizados });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  PANEL ADMIN (/admin) — lectura, métricas y acciones por fila
+//  Todos los endpoints exigen requireAdmin (header X-Admin-Password).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// "15/6/2026, 14:30:25" (fecha es-UY guardada en col A) → "2026-06-15" (comparable)
+function fechaAISO(fechaStr) {
+  const m = String(fechaStr || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!m) return null;
+  const [, d, mo, y] = m;
+  return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
+
+function filtrarMovimientos(movs, q = {}) {
+  let out = movs;
+  const { desde, hasta, tipo, comprador, estado } = q;
+  if (desde) out = out.filter((m) => { const iso = fechaAISO(m.fecha); return iso && iso >= desde; });
+  if (hasta) out = out.filter((m) => { const iso = fechaAISO(m.fecha); return iso && iso <= hasta; });
+  if (tipo)  out = out.filter((m) => m.tipo.toLowerCase() === String(tipo).toLowerCase());
+  if (comprador) {
+    const c = String(comprador).trim().toLowerCase();
+    out = out.filter((m) => m.comprador.trim().toLowerCase().includes(c));
+  }
+  if (estado) {
+    const e = String(estado).trim().toLowerCase();
+    out = out.filter((m) => m.comentario.trim().toLowerCase() === e);
+  }
+  return out;
+}
+
+// Agrega métricas sobre Movimientos. Período (desde/hasta) aplica a ventas,
+// ranking y "sin rotación". Deudores y "por agotarse" son all-time (deuda viva /
+// stock actual). Costo unitario por sabor = promedio del precio de las Entradas.
+function calcularMetricas(movs, productos, q = {}) {
+  const { desde, hasta } = q;
+  const enRango = (m) => {
+    const iso = fechaAISO(m.fecha);
+    if (desde && !(iso && iso >= desde)) return false;
+    if (hasta && !(iso && iso <= hasta)) return false;
+    return true;
+  };
+
+  const ventas   = movs.filter((m) => m.tipo === "Salida" && enRango(m));
+  const entradas = movs.filter((m) => m.tipo === "Entrada"); // base de costo: todas
+
+  const costoAgg = {};
+  for (const e of entradas) {
+    const k = e.sabor.trim();
+    if (!costoAgg[k]) costoAgg[k] = { sum: 0, n: 0 };
+    costoAgg[k].sum += e.precio;
+    costoAgg[k].n   += 1;
+  }
+  const costoUnit = (sabor) => {
+    const a = costoAgg[(sabor || "").trim()];
+    return a && a.n ? a.sum / a.n : 0;
+  };
+
+  const totalVendido     = ventas.reduce((s, m) => s + m.total, 0);
+  const unidadesVendidas = ventas.reduce((s, m) => s + m.cantidad, 0);
+  const ticketPromedio   = ventas.length ? Math.round(totalVendido / ventas.length) : 0;
+
+  const rankAgg = {};
+  for (const v of ventas) {
+    const k = v.sabor.trim();
+    if (!rankAgg[k]) rankAgg[k] = { sabor: k, unidades: 0, ingreso: 0 };
+    rankAgg[k].unidades += v.cantidad;
+    rankAgg[k].ingreso  += v.total;
+  }
+  const ranking = Object.values(rankAgg)
+    .map((r) => ({ ...r, margen: Math.round(r.ingreso - costoUnit(r.sabor) * r.unidades) }))
+    .sort((a, b) => b.unidades - a.unidades);
+
+  const margenBruto = ranking.reduce((s, r) => s + r.margen, 0);
+
+  const vendidos = new Set(ventas.map((v) => v.sabor.trim().toLowerCase()));
+  const sinRotacion = (productos || [])
+    .filter((p) => !vendidos.has((p.sabor || p.nombre || "").trim().toLowerCase()))
+    .map((p) => p.sabor || p.nombre);
+
+  const deudAgg = {};
+  for (const m of movs) {
+    if (m.tipo === "Salida" && m.comentario.trim().toLowerCase() === "debe") {
+      const k = m.comprador.trim() || "(sin nombre)";
+      deudAgg[k] = (deudAgg[k] || 0) + m.total;
+    }
+  }
+  const deudores = Object.entries(deudAgg)
+    .map(([comprador, total]) => ({ comprador, total }))
+    .sort((a, b) => b.total - a.total);
+
+  const porAgotarse = (productos || [])
+    .filter((p) => typeof p.stock === "number" && p.stock <= (p.stockMinimo || config.stock.minimoAlerta))
+    .map((p) => ({ sabor: p.sabor || p.nombre, stock: p.stock, minimo: p.stockMinimo || config.stock.minimoAlerta }));
+
+  return {
+    periodo: { desde: desde || null, hasta: hasta || null },
+    totalVendido, unidadesVendidas, ticketPromedio,
+    margenBruto, ranking, sinRotacion, deudores, porAgotarse,
+  };
+}
+
+// ── GET /api/movimientos (admin) ──────────────────────────────────────────────
+app.get("/api/movimientos", requireAdmin, async (req, res) => {
+  const movs = await sheets.leerMovimientos();
+  if (movs === null) return res.status(502).json({ error: "No se pudo leer Movimientos en Google Sheets." });
+  res.json(filtrarMovimientos(movs, req.query));
+});
+
+// ── GET /api/metricas (admin) ─────────────────────────────────────────────────
+app.get("/api/metricas", requireAdmin, async (req, res) => {
+  const movs = await sheets.leerMovimientos();
+  if (movs === null) return res.status(502).json({ error: "No se pudo leer Movimientos en Google Sheets." });
+  const productos = (await sheets.obtenerProductos()) || config.productosFallback;
+  res.json(calcularMetricas(movs, productos, req.query));
+});
+
+// ── PATCH /api/movimientos/:id (admin) ────────────────────────────────────────
+app.patch("/api/movimientos/:id", requireAdmin, async (req, res) => {
+  const { comprador, comentario, cantidad, precio } = req.body || {};
+  const campos = {};
+  if (comprador  !== undefined) campos.comprador  = comprador;
+  if (comentario !== undefined) campos.comentario = comentario;
+  if (cantidad   !== undefined) campos.cantidad   = cantidad;
+  if (precio     !== undefined) campos.precio     = precio;
+
+  const r = await sheets.actualizarMovimiento(req.params.id, campos);
+  if (r === null) return res.status(502).json({ error: "No se pudo actualizar el movimiento en Google Sheets." });
+  if (r.error === "not_found") return res.status(404).json({ error: "Movimiento no encontrado." });
+  if (r.error) return res.status(400).json({ error: r.error });
+  res.json(r);
+});
+
+// ── DELETE /api/movimientos/:id (admin) ───────────────────────────────────────
+app.delete("/api/movimientos/:id", requireAdmin, async (req, res) => {
+  const r = await sheets.borrarMovimiento(req.params.id);
+  if (r === null) return res.status(502).json({ error: "No se pudo borrar el movimiento en Google Sheets." });
+  if (r.error === "not_found") return res.status(404).json({ error: "Movimiento no encontrado." });
+  if (r.error) return res.status(400).json({ error: r.error });
+  res.json(r);
+});
+
+// ── POST /api/admin/backfill-ids (admin) ──────────────────────────────────────
+// One-shot: genera id (col J) para las filas históricas que no lo tienen, para
+// poder editarlas/borrarlas por fila desde el panel.
+app.post("/api/admin/backfill-ids", requireAdmin, async (req, res) => {
+  const r = await sheets.backfillIds();
+  if (r === null) return res.status(502).json({ error: "No se pudo hacer el backfill en Google Sheets." });
+  res.json(r);
+});
+
+// ── GET /admin ────────────────────────────────────────────────────────────────
+// Sirve el panel. (En Vercel, /admin se reescribe a /admin.html vía vercel.json;
+// este handler cubre el entorno local.)
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
 // ── Iniciar servidor / exportar para Vercel ───────────────────────────────────
 // En local (node server.js / nodemon) levantamos el servidor con listen().
 // En Vercel (serverless) NO se hace listen: se exporta el app como handler y
@@ -259,6 +446,9 @@ if (!process.env.VERCEL) {
     console.log(`   Telegram:        ${process.env.TELEGRAM_BOT_TOKEN ? "✅ configurado" : "⚠️  no configurado"}\n`);
   });
 }
+
+// Helpers puros expuestos para tests (no afectan el handler: module.exports = app)
+app._admin = { fechaAISO, filtrarMovimientos, calcularMetricas };
 
 // Handler serverless para Vercel (@vercel/node usa este export por request)
 module.exports = app;
